@@ -1,0 +1,436 @@
+import React, { useState } from 'react';
+import { 
+  Navigation, 
+  MessageCircle, 
+  Clock, 
+  MapPin, 
+  Users, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Upload, 
+  DollarSign, 
+  Compass, 
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
+  Building2,
+  Calendar,
+  XCircle
+} from 'lucide-react';
+
+interface Passenger {
+  id: string;
+  name: string;
+  paxCount: number;
+  phone: string;
+  pickupAddress: string;
+  dropoffAddress: string;
+  pickupTime: string;
+  bookingRef: string;
+  status: 'Pending' | 'Confirmed' | 'Onboard' | 'No-Show';
+}
+
+interface TourStop {
+  id: string;
+  name: string;
+  eta: string;
+  address: string;
+  type: 'pickup' | 'attraction' | 'conclusion';
+}
+
+export default function TourFlowApp() {
+  const [activeTab, setActiveTab] = useState<'cockpit' | 'guest' | 'finance' | 'admin'>('cockpit');
+  const [guideName] = useState('Lauren');
+  const [vehicleReg] = useState('FOR61JB');
+  const [tourRef] = useState('JGY26082301');
+  const [tourDate] = useState('23/08/26');
+  
+  // Dynamic Delay State
+  const [delayMinutes, setDelayMinutes] = useState(0);
+
+  // Manifest State (Extracted from Waybill)
+  const [passengers, setPassengers] = useState<Passenger[]>([
+    {
+      id: '1',
+      name: 'Ahmed Abdelrazek Mohamed',
+      paxCount: 1,
+      phone: '201158741517',
+      pickupAddress: '7 Tufnell Lane, Bryanston',
+      dropoffAddress: '7 Tufnell Lane, Bryanston',
+      pickupTime: '07:35',
+      bookingRef: 'GYG996W7NLXM',
+      status: 'Confirmed'
+    },
+    {
+      id: '2',
+      name: 'Lynn Diane Davis',
+      paxCount: 1,
+      phone: '61418938237',
+      pickupAddress: 'Sandton Sun & Towers, 5th St, Sandown, Sandton',
+      dropoffAddress: 'Sandton Sun & Towers, 5th St, Sandown',
+      pickupTime: '08:00',
+      bookingRef: 'GYGN6BZK9N5A',
+      status: 'Confirmed'
+    },
+    {
+      id: '3',
+      name: 'Alex Stewart',
+      paxCount: 2,
+      phone: '61436467620',
+      pickupAddress: 'Four Seasons Hotel The Westcliff, 67 Jan Smuts Ave, Westcliff',
+      dropoffAddress: 'Four Seasons Hotel The Westcliff, 67 Jan Smuts Ave',
+      pickupTime: '08:25',
+      bookingRef: 'GYG8LHF5K6RN',
+      status: 'Confirmed'
+    }
+  ]);
+
+  // Full Master Itinerary
+  const itinerary: TourStop[] = [
+    { id: '1', name: 'African Eagle Depot (Departure)', eta: '07:15', address: '72 Bevan Rd, Rivonia', type: 'pickup' },
+    { id: '2', name: 'Pickup 1: Ahmed Mohamed', eta: '07:35', address: '7 Tufnell Lane, Bryanston', type: 'pickup' },
+    { id: '3', name: 'Pickup 2: Lynn Diane Davis', eta: '08:00', address: 'Sandton Sun & Towers, 5th Street, Sandown', type: 'pickup' },
+    { id: '4', name: 'Pickup 3: Alex Stewart', eta: '08:25', address: 'Four Seasons Hotel The Westcliff, 67 Jan Smuts Ave', type: 'pickup' },
+    { id: '5', name: 'Constitution Hill & City Drive', eta: '08:45', address: '11 Kotze St, Braamfontein, Johannesburg', type: 'attraction' },
+    { id: '6', name: 'Apartheid Museum', eta: '10:30', address: 'Northern Parkway & Gold Reef Rd, Ormonde', type: 'attraction' },
+    { id: '7', name: 'Soweto Towers & Lunch', eta: '13:00', address: 'Chris Hani Rd, Klipspruit, Soweto', type: 'attraction' },
+    { id: '8', name: 'Vilakazi St (Mandela House)', eta: '14:15', address: '8115 Vilakazi St, Orlando West, Soweto', type: 'attraction' },
+    { id: '9', name: 'Hector Pieterson Memorial (Conclusion)', eta: '15:00', address: '8287 Khumalo Rd, Orlando West, Soweto', type: 'conclusion' }
+  ];
+
+  // Helper: Open Google Maps Direct Navigation
+  const openMapsNav = (address: string) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+    window.open(url, '_blank');
+  };
+
+  // Helper: Send Individual WhatsApp Evening Notification
+  const sendEveningMsg = (pax: Passenger) => {
+    const text = `Good evening ${pax.name}. I'm ${guideName}, your guide with African Eagle for tomorrow's Joburg & Soweto Tour (${tourDate}). Your confirmed pickup is @ ${pax.pickupTime} from ${pax.pickupAddress}. Vehicle: ${vehicleReg}. Live itinerary: https://touroperator.live/${tourRef}`;
+    window.open(`https://wa.me/${pax.phone}?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // Helper: Send Dynamic Delay Alert
+  const sendDelayAlert = (pax: Passenger, mins: number) => {
+    const text = `Hello ${pax.name}. Apologies, we are experiencing ${mins} mins traffic delay on our route. Your updated estimated pickup is now around ${pax.pickupTime} (+${mins} mins). Thank you for your patience! — ${guideName} (${vehicleReg})`;
+    window.open(`https://wa.me/${pax.phone}?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // Status Updater
+  const updatePaxStatus = (id: string, status: Passenger['status']) => {
+    setPassengers(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
+      {/* Top Header */}
+      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Compass className="w-6 h-6 text-emerald-400" />
+            <div>
+              <h1 className="text-base font-bold tracking-wide">TourFlow Pro</h1>
+              <p className="text-xs text-slate-400">African Eagle • Ref: {tourRef}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-1 rounded">
+              {vehicleReg}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="max-w-4xl mx-auto px-4 mt-3">
+        <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <button 
+            onClick={() => setActiveTab('cockpit')}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'cockpit' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+            Guide Cockpit
+          </button>
+          <button 
+            onClick={() => setActiveTab('guest')}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'guest' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+            Guest Live
+          </button>
+          <button 
+            onClick={() => setActiveTab('finance')}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'finance' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+            Expenses
+          </button>
+          <button 
+            onClick={() => setActiveTab('admin')}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'admin' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+            Scan Waybill
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="max-w-4xl mx-auto px-4 mt-4 space-y-4">
+        
+        {/* VIEW 1: GUIDE COCKPIT */}
+        {activeTab === 'cockpit' && (
+          <div className="space-y-4">
+            
+            {/* Delay & Quick Action Toolbar */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold uppercase text-slate-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Quick Dispatch Controls
+                </span>
+                <span className="text-xs text-slate-400">Guide: <strong className="text-slate-200">{guideName}</strong></span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button 
+                  onClick={() => {
+                    const fullRouteUrl = "https://www.google.com/maps/dir/72+Bevan+Rd,+Rivonia,+Sandton/7+Tufnell+Ln,+Bryanston/Sandton+Sun+and+Towers,+5th+St,+Sandown/Four+Seasons+Hotel+The+Westcliff,+67+Jan+Smuts+Ave/Constitution+Hill,+11+Kotze+St,+Braamfontein/Apartheid+Museum,+Northern+Parkway,+Ormonde/SOWETO+TOWERS,+Chris+Hani+Rd,+Klipspruit/8115+Vilakazi+St,+Orlando+West/8287+Khumalo+Rd,+Orlando+West";
+                    window.open(fullRouteUrl, '_blank');
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 py-2.5 px-3 rounded-xl text-xs font-semibold transition">
+                  <Navigation className="w-4 h-4" /> Full Master Map
+                </button>
+
+                <button 
+                  onClick={() => {
+                    passengers.forEach(p => sendEveningMsg(p));
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 py-2.5 px-3 rounded-xl text-xs font-semibold transition">
+                  <MessageCircle className="w-4 h-4" /> Blast Pre-Tour
+                </button>
+
+                <button 
+                  onClick={() => setDelayMinutes(prev => prev + 15)}
+                  className="flex items-center justify-center gap-1.5 bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 py-2.5 px-3 rounded-xl text-xs font-semibold transition">
+                  <Clock className="w-4 h-4" /> +15m Traffic
+                </button>
+              </div>
+            </div>
+
+            {/* Passenger Manifest Pickup Cards */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1 flex items-center justify-between">
+                <span>Morning Pickups ({passengers.reduce((acc, p) => acc + p.paxCount, 0)} Pax Total)</span>
+                <span className="text-emerald-400 lowercase font-normal">north $\to$ south sorted</span>
+              </h2>
+
+              {passengers.map((pax, index) => (
+                <div key={pax.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        <h3 className="font-bold text-sm text-slate-100">{pax.name}</h3>
+                        <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                          {pax.paxCount} Pax
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" /> {pax.pickupAddress}
+                      </p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">Ref: {pax.bookingRef} • +{pax.phone}</p>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-sm font-extrabold text-emerald-400 font-mono">
+                        {pax.pickupTime}
+                      </div>
+                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full inline-block mt-1 ${
+                        pax.status === 'Onboard' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                        pax.status === 'No-Show' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                        'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        {pax.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar for Passenger */}
+                  <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center gap-2">
+                    <button 
+                      onClick={() => openMapsNav(pax.pickupAddress)}
+                      className="flex-1 flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 px-3 rounded-lg text-xs font-medium transition">
+                      <Navigation className="w-3.5 h-3.5 text-blue-400" /> Nav
+                    </button>
+
+                    <button 
+                      onClick={() => sendEveningMsg(pax)}
+                      className="flex-1 flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 py-2 px-3 rounded-lg text-xs font-medium transition">
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> WhatsApp
+                    </button>
+
+                    {delayMinutes > 0 && (
+                      <button 
+                        onClick={() => sendDelayAlert(pax, delayMinutes)}
+                        className="flex-1 flex items-center justify-center gap-1 bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-800/40 py-2 px-3 rounded-lg text-xs font-medium transition">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" /> Alert +{delayMinutes}m
+                      </button>
+                    )}
+
+                    <div className="flex gap-1 ml-auto">
+                      <button 
+                        onClick={() => updatePaxStatus(pax.id, 'Onboard')}
+                        title="Mark as Onboard"
+                        className={`p-2 rounded-lg text-xs transition ${pax.status === 'Onboard' ? 'bg-emerald-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'}`}>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      </button>
+                      <button 
+                        onClick={() => updatePaxStatus(pax.id, 'No-Show')}
+                        title="Mark as No Show"
+                        className={`p-2 rounded-lg text-xs transition ${pax.status === 'No-Show' ? 'bg-rose-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'}`}>
+                        <XCircle className="w-4 h-4 text-rose-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Complete Tour Stops Timeline */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Day Tour Timeline Progress</h2>
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                {itinerary.map((stop) => (
+                  <div key={stop.id} className="relative group">
+                    <div className={`absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 bg-slate-950 ${
+                      stop.type === 'conclusion' ? 'border-amber-400' :
+                      stop.type === 'attraction' ? 'border-blue-400' : 'border-emerald-400'
+                    }`} />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">{stop.name}</h4>
+                        <p className="text-[11px] text-slate-500 truncate max-w-[220px]">{stop.address}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-slate-400">{stop.eta}</span>
+                        <button 
+                          onClick={() => openMapsNav(stop.address)}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300">
+                          <Navigation className="w-3 h-3 text-blue-400" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* VIEW 2: GUEST LIVE-TRACKER (What the Tourist Sees) */}
+        {activeTab === 'guest' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
+            <div className="text-center space-y-2">
+              <span className="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-3 py-1 rounded-full font-semibold">
+                African Eagle Day Tours
+              </span>
+              <h2 className="text-xl font-extrabold text-white">Joburg, Soweto & Apartheid Museum</h2>
+              <p className="text-xs text-slate-400 font-mono">Ref: {tourRef} • {tourDate}</p>
+            </div>
+
+            {/* Guide Card for Guest */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center font-bold text-emerald-400 text-lg">
+                  {guideName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-100">Your Guide: {guideName}</h4>
+                  <p className="text-xs text-slate-400">Vehicle: <strong className="text-slate-200">{vehicleReg}</strong></p>
+                </div>
+              </div>
+              <button 
+                onClick={() => window.open('tel:+27117767700')}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-xl font-bold transition">
+                Call Guide
+              </button>
+            </div>
+
+            {/* Live Progress Bar for Tourist */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Tour Itinerary Highlights</h3>
+              <div className="space-y-2">
+                {[
+                  { name: 'Morning Pickups', status: 'In Progress' },
+                  { name: 'Constitution Hill & Joburg City', status: 'Upcoming' },
+                  { name: 'Apartheid Museum Tour', status: 'Upcoming' },
+                  { name: 'Soweto Towers & Traditional Lunch', status: 'Upcoming' },
+                  { name: 'Vilakazi Street (Mandela House)', status: 'Upcoming' },
+                  { name: 'Hector Pieterson Memorial (Conclusion)', status: 'Upcoming' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800/60">
+                    <span className="text-xs font-semibold text-slate-200">{i + 1}. {item.name}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      item.status === 'In Progress' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-950/20 border border-blue-900/30 rounded-xl text-center space-y-1">
+              <ShieldCheck className="w-5 h-5 text-blue-400 mx-auto" />
+              <p className="text-xs font-semibold text-blue-200">24/7 Operations Support Active</p>
+              <p className="text-[11px] text-blue-400">African Eagle Head Office: +27 (0)11 776 7700</p>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 3: FINANCE & EXPENSES (Replaces Waybill Paper Box) */}
+        {activeTab === 'finance' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-400" /> Daily Waybill Expense Reconciliation
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="text-[11px] text-slate-400 uppercase font-semibold">Float Received (ZAR)</label>
+                <input type="number" defaultValue={500} className="w-full bg-transparent font-mono text-lg font-bold text-slate-100 outline-none mt-1" />
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="text-[11px] text-slate-400 uppercase font-semibold">Total Cash Received</label>
+                <input type="number" defaultValue={0} className="w-full bg-transparent font-mono text-lg font-bold text-slate-100 outline-none mt-1" />
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="text-[11px] text-slate-400 uppercase font-semibold">Total Expenses (Tolls/Park)</label>
+                <input type="number" defaultValue={220} className="w-full bg-transparent font-mono text-lg font-bold text-slate-100 outline-none mt-1" />
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="text-[11px] text-slate-400 uppercase font-semibold">Balance Due / Owed</label>
+                <div className="font-mono text-lg font-bold text-emerald-400 mt-1">R 280.00</div>
+              </div>
+            </div>
+            <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs transition">
+              Submit Final Trip Reconciliation
+            </button>
+          </div>
+        )}
+
+        {/* VIEW 4: WAYBILL SCANNER & OCR UPLOAD */}
+        {activeTab === 'admin' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <Upload className="w-4 h-4 text-blue-400" /> Upload Daily Tour Waybill
+            </h2>
+            <div className="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 rounded-2xl p-8 text-center transition cursor-pointer bg-slate-950/50">
+              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-slate-200">Drag and drop waybill PDF/Image or tap to take photo</p>
+              <p className="text-[11px] text-slate-500 mt-1">AI Vision automatically extracts Pax, Hotels, Contact Numbers, and generates optimized routes.</p>
+            </div>
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Upcoming API Integration Ready</span>
+              <p className="text-xs text-slate-300">Ready to link directly with Tourplan or reservation webhooks via <code>/api/waybills/ingest</code>.</p>
+            </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
