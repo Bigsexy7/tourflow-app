@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowUpRight, CalendarDays, CarFront, Check, CircleCheck as CheckCircle2, CircleAlert, ClipboardCheck, Clock3, FileScan, MapPin, MessageCircle, Navigation, RefreshCw, Send, UserCheck, UsersRound, WalletCards, Waypoints, X, Zap } from "lucide-react";
+import { ArrowUpRight, CalendarDays, CarFront, Check, CircleCheck as CheckCircle2, CircleAlert, ClipboardCheck, Clock3, FileScan, MapPin, MessageCircle, Navigation, RefreshCw, Send, Share2, UserCheck, UsersRound, WalletCards, Waypoints, X, Zap } from "lucide-react";
 import { useTour } from "./TourContext";
 import {
   Button,
@@ -12,12 +12,13 @@ import {
 } from "./ui";
 import type { Passenger, PassengerStatus } from "./types";
 
-type Tab = "cockpit" | "guest" | "expenses" | "scanner";
+type Tab = "cockpit" | "expenses" | "scanner";
 
 function PassengerRow({
   passenger,
   onStatus,
   onEdit,
+  onShare,
   alertSent,
   onAlert,
   delayMinutes,
@@ -25,6 +26,7 @@ function PassengerRow({
   passenger: Passenger;
   onStatus: (id: string, status: PassengerStatus) => void;
   onEdit: (p: Passenger) => void;
+  onShare: (p: Passenger) => void;
   alertSent: boolean;
   onAlert: () => void;
   delayMinutes: number;
@@ -124,6 +126,13 @@ function PassengerRow({
         >
           <Navigation size={15} />
         </a>
+        <button
+          onClick={() => onShare(passenger)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#597065] transition hover:bg-[#edf1e9]"
+          aria-label={`Copy live tracking link for ${passenger.name}`}
+        >
+          <Share2 size={15} />
+        </button>
         {delayMinutes > 0 ? (
           <Button
             variant={alertSent ? "soft" : "danger"}
@@ -323,6 +332,15 @@ export function Cockpit({
     flash("WhatsApp delay alert queued for guest");
   };
 
+  // Each guest gets a private, POPIA-safe live view at /#/guest/:id
+  const shareGuestLink = (p: Passenger) => {
+    const link = `${window.location.origin}${window.location.pathname}#/guest/${p.id}`;
+    void navigator.clipboard
+      ?.writeText(link)
+      .then(() => flash(`Live link copied for ${p.name.split(" ")[0]}`))
+      .catch(() => flash(link));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -477,6 +495,7 @@ export function Cockpit({
                 passenger={p}
                 onStatus={updateStatus}
                 onEdit={setEditing}
+                onShare={shareGuestLink}
                 delayMinutes={delayMinutes}
                 alertSent={Boolean(alertSent[p.id])}
                 onAlert={() => sendAlert(p.id)}
