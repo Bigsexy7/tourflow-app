@@ -4,12 +4,16 @@ import {
   Headphones,
   Landmark,
   MapPin,
+  MessageCircle,
   Navigation,
+  Phone,
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
 import { useTour } from "./TourContext";
-import { navigationUrl } from "./ui";
+import { navigationUrl, whatsappUrl } from "./ui";
+
+const GUIDE_HOTLINE = "+27117767700";
 
 export function GuestLiveView({ guestId }: { guestId: string }) {
   const { tour } = useTour();
@@ -32,11 +36,21 @@ export function GuestLiveView({ guestId }: { guestId: string }) {
     );
   }
 
+  // Checkpoints come from the live itinerary, so a freshly scanned waybill
+  // cascades straight through to the guest view.
   const liveStops = [
-    { title: "Your pickup", detail: `${guest.time} · ${guest.hotel}`, icon: MapPin },
-    { title: "Constitution Hill", detail: "Guided visit", icon: Landmark },
-    { title: "Soweto orientation", detail: "Vilakazi Street", icon: MapPin },
-    { title: "Hector Pieterson Memorial", detail: "Tour conclusion", icon: ShieldCheck },
+    {
+      title: "Your pickup",
+      detail: `${guest.time} · ${guest.hotel}`,
+      icon: MapPin,
+    },
+    ...tour.itinerary
+      .filter((stop) => !/pickup/i.test(stop.title))
+      .map((stop) => ({
+        title: stop.title,
+        detail: [stop.time, stop.location].filter(Boolean).join(" · "),
+        icon: Landmark,
+      })),
   ];
 
   const liveStep = tour.liveStep;
@@ -87,12 +101,25 @@ export function GuestLiveView({ guestId }: { guestId: string }) {
                 </p>
               </div>
             </div>
-            <a
-              href="tel:+27117767700"
-              className="rounded-xl bg-[#df8753] px-3 py-2 text-[10px] font-extrabold text-[#204f42] transition hover:bg-[#f0a06a]"
-            >
-              Call guide
-            </a>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <a
+                href={`tel:${GUIDE_HOTLINE}`}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#df8753] px-3 py-2 text-[10px] font-extrabold text-[#204f42] transition hover:bg-[#f0a06a]"
+              >
+                <Phone size={12} /> Call
+              </a>
+              <a
+                href={whatsappUrl(
+                  GUIDE_HOTLINE,
+                  `Hi ${tour.guideName}, this is ${guest.name} from the ${tour.tourTitle} tour.`,
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#2f6b4f] px-3 py-2 text-[10px] font-extrabold text-[#fff8e8] transition hover:bg-[#3a8060]"
+              >
+                <MessageCircle size={12} /> WhatsApp
+              </a>
+            </div>
           </div>
 
           <div className="mt-3 rounded-xl bg-[#173f35] p-3">

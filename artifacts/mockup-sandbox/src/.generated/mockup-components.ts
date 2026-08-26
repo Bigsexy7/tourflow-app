@@ -6,6 +6,7 @@ export const modules: ModuleMap = {
   "./components/mockups/tourflow/Expenses.tsx": () => import("../components/mockups/tourflow/Expenses.tsx"),
   "./components/mockups/tourflow/GuestLiveView.tsx": () => import("../components/mockups/tourflow/GuestLiveView.tsx"),
   "./components/mockups/tourflow/PinLock.tsx": () => import("../components/mockups/tourflow/PinLock.tsx"),
+  "./components/mockups/tourflow/Scanner.tsx": () => import("../components/mockups/tourflow/Scanner.tsx"),
   "./components/mockups/tourflow/TourContext.tsx": () => import("../components/mockups/tourflow/TourContext.tsx"),
   "./components/mockups/tourflow/ui.tsx": () => import("../components/mockups/tourflow/ui.tsx")
 };
