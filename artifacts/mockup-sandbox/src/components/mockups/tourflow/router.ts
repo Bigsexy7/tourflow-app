@@ -6,24 +6,35 @@ export type Route =
   | { name: "guest"; id: string };
 
 export function parseHash(): Route {
-  const hash = window.location.hash.replace(/^#/, "");
-  if (hash === "/" || hash === "") return { name: "root" };
-  const guestMatch = hash.match(/^\/guest\/(.+)$/);
-  if (guestMatch) return { name: "guest", id: guestMatch[1] };
-  if (hash === "/cockpit") return { name: "cockpit" };
+  if (typeof window === "undefined") return { name: "root" };
+  const rawHash = window.location.hash || "";
+  const cleaned = rawHash.replace(/^#\/?/, "");
+
+  if (!cleaned || cleaned === "/") return { name: "root" };
+  
+  const guestMatch = cleaned.match(/^guest\/(.+)$/);
+  if (guestMatch) {
+    return { name: "guest", id: decodeURIComponent(guestMatch[1]) };
+  }
+  
+  if (cleaned.startsWith("cockpit")) {
+    return { name: "cockpit" };
+  }
+
   return { name: "root" };
 }
 
 export function navigate(route: Route): void {
+  if (typeof window === "undefined") return;
   switch (route.name) {
     case "cockpit":
-      window.location.hash = "/cockpit";
+      window.location.hash = "#/cockpit";
       break;
     case "guest":
-      window.location.hash = `/guest/${route.id}`;
+      window.location.hash = `#/guest/${encodeURIComponent(route.id)}`;
       break;
     case "root":
-      window.location.hash = "/";
+      window.location.hash = "#/";
       break;
   }
 }
